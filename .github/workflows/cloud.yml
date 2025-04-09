@@ -1,0 +1,26 @@
+name: Deploy Persistent Nextcloud
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - name: Install Railway CLI
+        run: npm i -g @railway/cli
+
+      - name: Login to Railway
+        run: railway login --token ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Up Project
+        run: railway up
+
+      - name: Send Tunnel URL via Telegram
+        run: |
+          curl -s "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage"             -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}"             -d text="✅ Nextcloud redeployed. Tunnel is alive!"

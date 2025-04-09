@@ -1,0 +1,48 @@
+version: "3.9"
+
+services:
+  nextcloud:
+    image: nextcloud
+    restart: always
+    ports:
+      - 8080:80
+    volumes:
+      - nextcloud_data:/var/www/html
+      - ./rclone:/mnt/rclone
+    environment:
+      - POSTGRES_HOST=db
+      - POSTGRES_DB=nextcloud
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    depends_on:
+      - db
+
+  db:
+    image: postgres:alpine
+    restart: always
+    environment:
+      POSTGRES_DB: nextcloud
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  rclone-webdav:
+    image: rclone/rclone:latest
+    command: serve webdav --config /config/rclone.conf --addr :8081 remote:
+    volumes:
+      - ./rclone:/config
+    restart: always
+    ports:
+      - 8081:8081
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: always
+    command: tunnel run --token ${CF_TUNNEL_TOKEN}
+    volumes:
+      - ./cloudflared:/etc/cloudflared
+
+volumes:
+  nextcloud_data:
+  postgres_data:
